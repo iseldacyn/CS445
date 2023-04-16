@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "tree.h"
+#include "symtab.h"
 %}
 
 %union{
@@ -56,7 +57,9 @@ program: DEF ID '(' identifier_list ')' ';'
 	;
 
 identifier_list: ID
+		{ scope_insert( top_scope, $1 ); }
 	| identifier_list ',' ID
+		{ scope_insert( top_scope, $3 ); }
 	;
 
 declarations: declarations VAR identifier_list ':' type ';'
@@ -83,10 +86,22 @@ subprogram_declaration:
 		declarations
 		subprogram_declarations
 		compound_statement
+		{ top_scope = scope_pop( top_scope ); } // leaving inner scope
 	;
 
-subprogram_header: FUNC ID arguments ':' standard_type ';'
-	| PROC ID arguments ';'
+subprogram_header: FUNC ID 
+		{ 
+			p = scope_insert( top_scope, $2 );	// record function ID in current scope
+			top_scope = scope_push( top_scope );	// create a new scope
+		} 
+		arguments ':' standard_type ';'
+		
+	| PROC ID
+		{ 
+			p = scope_insert( top_scope, $2 );	// record function ID in current scope
+			top_scope = scope_push( top_scope );	// create a new scope
+		} 
+		arguments ';'
 	;
 
 arguments: '(' parameter_list ')'
@@ -155,9 +170,9 @@ term: factor
     ;
 
 factor: ID
-		{ $$ = make_id( $1 ); }
+		{ $$ = make_id( global_scope_search( top_scope, $1 ) ); }
 	| ID '(' expression_list ')'
-		{ $$ = make_tree( FUNCTION_CALL, make_id( $1 ), $3 ); }
+		{ $$ = make_tree( FUNCTION_CALL, make_id( global_scope_search( top_scope, $1 ) ), $3 ); }
 	| ID '[' expression ']'
 		{ $$ = make_tree( ARRAY_ACCESS, make_id( $1 ), $3 ); }
 	| INUM

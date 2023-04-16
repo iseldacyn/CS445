@@ -19,7 +19,7 @@ tree_t *make_tree( int type, tree_t *l, tree_t *r )
 	return p;
 }
 
-tree_t *make_id( char *name )
+tree_t *make_id( list_t * )
 {
 	tree_t *p = make_tree( ID, NULL, NULL );
 	p->attribute.sval = name;

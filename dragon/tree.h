@@ -15,7 +15,7 @@ typedef struct tree_s {
 } tree_t;
 
 tree_t *make_tree( int v, tree_t *l, tree_t *r );
-tree_t *make_id( char * );
+tree_t *make_id( list_t * );
 tree_t *make_inum( int );
 tree_t *make_rnum( float );
 void print_tree( tree_t *t );
