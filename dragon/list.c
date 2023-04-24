@@ -4,31 +4,35 @@
 #include <assert.h>
 #include "list.h"
 
+extern char *strdup(const char *);
+
 /* constructor/deconstructor */
 list_t *make_list( char *str )
 {
-  list_t *p = (list_t *)malloc( sizeof(list_t) );
-  assert( p != NULL );
-  p->name = strdup( str );  /* potentially buggy */
-  p->next = NULL;
-  return p;
+	list_t *p = (list_t *)malloc( sizeof(list_t) );
+	assert( p != NULL );
+	p->name = strdup( str );  /* safer */
+	p->next = NULL;
+	return p;
 }
 
 void free_list( list_t *p )
 {
-  // stub
-  free( p->name );
-  free( p );
+	if ( p == NULL ) return;
+
+	free_list( p->next );
+	free( p->name );
+	free( p );
 }
 
 void list_print( list_t *top )
 {
-  list_t *q = top;
-  while ( q != NULL ){
-    printf( "[%s] -> ", q-> name );
-    q = q->next;
-  }
-  printf( "[]\n" );
+	list_t *q = top;
+	while ( q != NULL ){
+		printf( "[%s] -> ", q->name );
+		q = q->next;
+	}
+	printf( "[]\n" );
 }
 
 /* insert to top of linked list 
@@ -36,12 +40,12 @@ void list_print( list_t *top )
  */
 list_t *list_insert( list_t *top, char *name )
 {
-  list_t *p = make_list( name );  // new node to store name
+	list_t *p = make_list( name );  // new node to store name
 
-  if ( top != NULL ) // linked list is empty
-    p->next = top;
-  
-  return top = p;
+	if ( top != NULL ) // linked list is empty
+		p->next = top;
+
+	return top = p;
 }
 
 /* search linked list for str 
@@ -49,12 +53,12 @@ list_t *list_insert( list_t *top, char *name )
  */
 list_t *list_search( list_t *top, char *str )
 {
-  list_t *p = top;
+	list_t *p = top;
 
-  while ( p != NULL ) {
-    if ( !strcmp( p->name, str ) )
-      return p;
-    p = p->next;
-  }
-  return NULL;
+	while ( p != NULL ) {
+	if ( !strcmp( p->name, str ) )
+		return p;
+		p = p->next;
+	}
+	return NULL;
 }

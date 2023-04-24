@@ -3,8 +3,15 @@
 
 /* linked list data structure */
 typedef struct list_s {
-  char *name ;
-  struct list_s *next;  
+	char *name;    /* identifier name */
+	int class;     /* simple variable, FUNC name, PROC, ARRAY name */
+	int type;      /* INTEGRAL, RATIONAL, ARRAY */
+	/* additional information */
+	union {
+		int low-up[2];
+		tree_t *args;
+	} arguments; 
+	struct list_s *next;  
 } list_t;
 
 /* constructor/destructor */

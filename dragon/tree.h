@@ -1,12 +1,14 @@
 #ifndef TREE_H
 #define TREE_H
 
+#include "list.h"
+
 typedef struct tree_s {
 	int type;			/*  */
 	union {
 		int ival; 	/* INUM */
 		float rval; /* RNUM */
-		char *sval; /* ID */
+		list_t *sval; /* ID: symbol table pointer */
 		int opval;  /* ADDOP, MULOP, RELOP */
 	} attribute;
 	
@@ -14,7 +16,7 @@ typedef struct tree_s {
 	struct tree_s *right;
 } tree_t;
 
-tree_t *make_tree( int v, tree_t *l, tree_t *r );
+tree_t *make_tree( int, tree_t *, tree_t * );
 tree_t *make_id( list_t * );
 tree_t *make_inum( int );
 tree_t *make_rnum( float );
