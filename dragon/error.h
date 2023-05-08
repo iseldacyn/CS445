@@ -9,4 +9,3 @@ void double_decl( scope_t *, char * );
 void decl_check( list_t *, char * );
 
 #endif
-

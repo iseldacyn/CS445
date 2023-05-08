@@ -4,7 +4,7 @@
 #include "list.h"
 
 typedef struct tree_s {
-	int type;			/*  */
+	int type;			/* type of tree */
 	union {
 		int ival; 	/* INUM */
 		float rval; /* RNUM */

@@ -7,16 +7,16 @@
 #include "y.tab.h"
 %}
 
-identifier [a-zA-Z][a-zA-z0-9]*
-number [0-9]+
+identifier [[:alpha:]][[:alnum:]]*
+number [[:digit:]]+
 whitespace [ \t]+
 
 %%
 
 	/* comments */
-"{"[^}]*"}"
-"(*".*"*)"
-"//".*\n
+"{"[^}]*"}"		{ ; }
+"(*".*"*)"		{ ; }
+"//".*\n		{ ; }
 	/* code */
 "def"			{ fprintf( stderr, "[DEF]" ); return DEF; }
 "var" 			{ fprintf( stderr, "[VAR]" ); return VAR; }
@@ -58,12 +58,13 @@ whitespace [ \t]+
 "/"		 		{ fprintf( stderr, "[MULOP:%d]", yylval.opval = SLASH ); return MULOP; }
 "("	 			{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
 ")"				{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
-"[" 			{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
-"]" 			{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
 ":" 			{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
 ";" 			{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
 "," 			{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
 "." 			{ fprintf( stderr, "{%c}", yytext[0] ); return yytext[0]; }
+"[" 			{ fprintf( stderr, "[LBRACKET]" ); return LBRACKET; }
+"]" 			{ fprintf( stderr, "[RBRACKET]" ); return RBRACKET; }
+".."			{ fprintf( stderr, "[DOTDOT]" ); return DOTDOT; }
 \n				{ fprintf( stderr, "\n" ); }
 .				{ fprintf( stderr, "<%c>", yytext[0] ); return yytext[0]; }
 

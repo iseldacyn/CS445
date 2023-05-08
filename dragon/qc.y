@@ -29,6 +29,8 @@ scope_t *top_scope;
 %token VAR
 %token ARRAY OF
 %token INTEGRAL RATIONAL
+%token DOTDOT
+%token LBRACKET RBRACKET 
 %token BBEGIN END
 %token FUNC PROC
 %token IF THEN ELSE
@@ -47,6 +49,8 @@ scope_t *top_scope;
 
 %token FUNCTION_CALL ARRAY_ACCESS
 %token LIST
+%token IFELSE IFTHEN THENELSE
+%token FORDO WHILEDO REPEATUNTIL
 
 %token <sval> ID
 %token <ival> INUM
@@ -57,12 +61,18 @@ scope_t *top_scope;
 
 %type <tval> variable
 %type <tval> expression
-//%type <tval> statement 
+%type <tval> statement
+%type <tval> matched_statement
+%type <tval> unmatched_statement
+%type <tval> other_statements
+%type <tval> optional_statements
 %type <tval> expression_list
-//%type <tval> statement_list
+%type <tval> statement_list
 %type <tval> identifier_list
 %type <tval> parameter_list
 %type <tval> arguments
+%type <tval> procedure_statement
+%type <tval> compound_statement
 %type <tval> simple_expression
 %type <tval> term
 %type <tval> factor
@@ -96,13 +106,14 @@ declarations: declarations VAR identifier_list ':' type ';'
 	| /* empty */
 	;
 
-type: standard_type { $$ = $1; }
-	| ARRAY '[' range ']' OF standard_type
+type: standard_type
+		{ $$ = $1; }
+	| ARRAY LBRACKET range RBRACKET OF standard_type
 		{ $$ = ARRAY; }
 	;
 
-range: INUM '.' '.' INUM
-	 	{ $$ = make_range( $1, $4 ); }
+range: INUM DOTDOT INUM
+	 	//{ $$ = make_range( $1, $4 ); }
 	;
 
 standard_type: INTEGRAL { $$ = INTEGRAL; }
@@ -121,15 +132,16 @@ subprogram_declaration:
 		{ top_scope = scope_pop( top_scope ); } // leaving inner scope
 	;
 
-subprogram_header: FUNC ID arguments ':' standard_type ';'
+subprogram_header: FUNC ID
 		{
 			double_decl( top_scope, $2 );
 			id_ptr = scope_insert( top_scope, $2 );	// record function ID in current scope
 			top_scope = scope_push( top_scope );	// create a new scope
 			id_ptr->type = $5;
-			id_ptr-> = $3;
+		//	id_ptr-> = $3;
 			id_ptr = scope_insert( top_scope, $2 );
 		}
+		arguments ':' standard_type ';'
 	| PROC ID
 		{ 
 			double_decl( top_scope, $2 );
@@ -140,7 +152,7 @@ subprogram_header: FUNC ID arguments ':' standard_type ';'
 	;
 
 arguments: '(' parameter_list ')'
-		 { $$ = $2; }
+		{ $$ = $2; }
 	| /* empty */
 		{ $$ = NULL; }
 	;
@@ -161,52 +173,86 @@ compound_statement:
 	BBEGIN
 		optional_statements
 	END
+		{ $$ = $2; }
 	;
 
 optional_statements: statement_list
+		{ $$ = $1; }
 	| /* empty */
+		{ $$ = NULL; }
 	;
 
 statement_list: statement
-	//	{ $$ = $1; }
+		{ $$ = $1; }
 	| statement_list ';' statement
-	//	{ $$ = make_tree( LIST, $1, $3 ); }
+		{ $$ = make_tree( LIST, $1, $3 ); }
 	;
 
 statement: matched_statement
+		{ $$ = $1; }
 	| unmatched_statement
+		{ $$ = $1; }
 	;
 
 matched_statement: IF expression THEN matched_statement ELSE matched_statement
+		{ $$ = make_tree( IFELSE, $2, make_tree( THENELSE, $4, $6 ) ); }
 	| WHILE expression DO matched_statement
+		{ $$ = make_tree( WHILEDO, $2, $4 ); }
 	| REPEAT matched_statement UNTIL expression
+		{ $$ = make_tree( REPEATUNTIL, $4, $2 ); }
 	| FOR ID ASSIGNOP range DO matched_statement
+		{
+			id_ptr = semantic_lookup( top_scope, $2 );
+			type_check( id_ptr->type, INUM );
+			$$ = make_tree( FORDO, NULL, $6 ); //fix later
+		}
 	| other_statements
+		{ $$ = $1; }
 	;
 
 unmatched_statement: IF expression THEN statement
+		{ $$ = make_tree( IFTHEN, $2, $4 ); }
 	| IF expression THEN matched_statement ELSE unmatched_statement
+		{ $$ = make_tree( IFELSE, $2, make_tree( THENELSE, $4, $6 ) ); }
 	| WHILE expression DO unmatched_statement
+		{ $$ = make_tree( WHILEDO, $2, $4 ); }
 	| REPEAT unmatched_statement UNTIL expression
+		{ $$ = make_tree( REPEATUNTIL, $4, $2 ); }
 	| FOR ID ASSIGNOP range DO unmatched_statement
+		{
+			id_ptr = semantic_lookup( top_scope, $2 );
+			type_check( id_ptr->type, INUM );
+			$$ = make_tree( FORDO, NULL, $6 ); //fix later
+		}
 	;
 
 other_statements: variable ASSIGNOP expression
 		{ type_check( type_of($1), type_of($3)); }
 	| procedure_statement
-	//	{ $$ = $1; }
+		{ $$ = $1; }
 	| compound_statement
+		{ $$ = $1; }
 	;
 
 variable: ID
 		{ $$ = make_id( semantic_lookup( top_scope, $1 )); }
-	| ID '[' expression ']'
-		{ $$ = make_tree( ARRAY_ACCESS, make_id( semantic_lookup( top_scope, $1 )), $3 ); }
+	| ID LBRACKET expression RBRACKET
+		{ 
+			type_check( type_of($3), INUM );
+			$$ = make_tree( ARRAY_ACCESS, make_id( semantic_lookup( top_scope, $1 )), $3 );
+		}
 	;
 
 procedure_statement: ID
+		{
+			id_ptr = semantic_lookup( top_scope, $1 );
+			$$ = make_tree( FUNCTION_CALL, make_id( id_ptr ), NULL );
+		}
 	| ID '(' expression_list ')'
-	//	{ $$ = }
+		{
+			id_ptr = semantic_lookup( top_scope, $1 );
+			$$ = make_tree( FUNCTION_CALL, make_id( id_ptr ), $3 );
+		}
 	;
 
 expression_list: expression
@@ -250,12 +296,14 @@ factor: ID
 		{ $$ = make_id( semantic_lookup( top_scope, $1 )); }
 	| ID '(' expression_list ')'
 		{ 
-			id_ptr = semantic_lookup( tope_scope, $1 );
-			$$ = make_tree( FUNCTION_CALL, make_id( semantic_lookup( top_scope, $1 ) ), $3 ); 
-			
+			id_ptr = semantic_lookup( top_scope, $1 );
+			$$ = make_tree( FUNCTION_CALL, make_id( semantic_lookup( top_scope, $1 ) ), $3 );
 		}
-	| ID '[' expression ']'
-		{ $$ = make_tree( ARRAY_ACCESS, make_id( semantic_lookup( top_scope, $1 ) ), $3 ); }
+	| ID LBRACKET expression RBRACKET
+		{
+			type_check( type_of($3), INUM );
+			$$ = make_tree( ARRAY_ACCESS, make_id( semantic_lookup( top_scope, $1 ) ), $3 );
+		}
 	| INUM
 		{ $$ = make_inum( $1 ); }
 	| RNUM
