@@ -2,10 +2,11 @@
 #define TREE_H
 
 typedef struct tree_s {
-  int type;       /* token types: ADDOP, MULOP, NUM */
-  int attribute;  /* token attribute */
+  int type;			/* token types: ADDOP, MULOP, NUM */
+  int attribute;	/* token attribute */
   struct tree_s *left;
   struct tree_s *right;
+  char side;		/* codegen side */
 } tree_t;
 
 tree_t *make_tree( int , int , tree_t *, tree_t *);

@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "const.h"
 #include "tree.h"
+#include "codegen.h"
 
 /* globals for communication between parser and scanner */
 int current_token;
@@ -36,6 +37,9 @@ int main()
     fprintf( stderr, "\nEVALUATING TREE...\n\n" );
     print_tree( value );
     fprintf( stderr, "\nResult: %.2f\n", eval_tree( value ) );
+
+	char *file = "calc.s";
+	gencode( value, file );
   }
   else exit(1);
 
@@ -103,7 +107,7 @@ tree_t *factor()
   }
   else if (current_token == NUM) 
   {
-    value = make_tree( NUM, current_attribute, NULL, NULL ); // current_attribute is lost
+    value = make_tree( NUM, current_attribute, NULL, NULL );
     match(NUM);
   }
   else

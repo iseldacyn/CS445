@@ -15,7 +15,11 @@ tree_t *make_tree( int type, int attribute, tree_t *l , tree_t *r )
   p->type = type;
   p->attribute = attribute;
   p->left = l;
+  if (l != NULL)
+  	p->left->side = 'l';
   p->right = r;
+  if (r!= NULL)
+  	p->right->side = 'r';
   
   return p;
 }
