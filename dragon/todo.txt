@@ -1,0 +1,5 @@
+TODO:
+	- Functions should not update non-local variables ( t5-4.q )
+	- Implement Arrays / Change type from int to struct for lists
+	- Change variable and array names to offsets for code generation
+	- All of code generation to assembly

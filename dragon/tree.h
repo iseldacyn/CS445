@@ -20,6 +20,7 @@ tree_t *make_tree( int, tree_t *, tree_t * );
 tree_t *make_id( list_t * );
 tree_t *make_inum( int );
 tree_t *make_rnum( float );
+int search_tree_for_assignop( tree_t *, char * );
 void print_tree( tree_t *t );
 
 #endif

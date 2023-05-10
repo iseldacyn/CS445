@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include "symtab.h"
 
@@ -33,7 +34,7 @@ scope_t *scope_push( scope_t *top )
 scope_t *scope_pop( scope_t *top )
 {
 	if ( top != NULL ) {
-		scope_t *tmp = top;
+		scope_t *tmp;
 		tmp = top->next;
 		free_scope(top);
 		return tmp;
@@ -72,10 +73,10 @@ list_t *global_scope_search( scope_t *top, char *name )
 	list_t *p;
 
 	while ( curr != NULL ) {  // searching all scopes
-		p = scope_search( curr, name );
-	if ( p != NULL )
-		return p;  // found name, return
-	curr = curr->next;  // try next scope
+			p = scope_search( curr, name );
+		if ( p != NULL )
+			return p;  // found name, return
+		curr = curr->next;  // try next scope
 	}
 	return NULL;  // name not found
 }

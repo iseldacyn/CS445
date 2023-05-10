@@ -56,9 +56,24 @@ list_t *list_search( list_t *top, char *str )
 	list_t *p = top;
 
 	while ( p != NULL ) {
-	if ( !strcmp( p->name, str ) )
-		return p;
+		if ( !strcmp( p->name, str ) )
+			return p;
 		p = p->next;
 	}
 	return NULL;
+}
+
+/* combines two linked lists */
+list_t *list_combine( list_t *p1, list_t *p2 )
+{
+	if ( p2->next == NULL ) {
+		p2->next = p1;
+		return p2;
+	}
+
+	list_t *top = list_combine( p1, p2->next );
+	p2->next = top;
+	p1 = p2;
+
+	return p1;
 }

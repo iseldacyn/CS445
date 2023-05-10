@@ -49,6 +49,22 @@ void free_tree( tree_t *p )
 	free( p );
 }
 
+
+int search_tree_for_assignop( tree_t *t, char *name )
+{
+	if ( t == NULL ) return 0;
+
+	if ( t->type == ASSIGN ) {
+		if ( name == t->left->attribute.sval->name )
+			return 1;
+	}
+
+	int left = search_tree_for_assignop( t->left, name );
+	int right = search_tree_for_assignop( t->right, name );
+
+	return left + right;
+}
+
 ///////////////////////////////////////////////////////////////
 
 /* pre-order tree traversal */
@@ -91,7 +107,7 @@ void aux_print_tree( tree_t *t, int spaces )
 		fprintf( stderr, "[RNUM:%.2f]\n", t->attribute.rval );
 		break;
 	default:
-		fprintf( stderr, "Error: print_tree, unknown type\n" );
+		fprintf( stderr, "[%s]\n", t->type );
 		exit(1);
 	}
 }

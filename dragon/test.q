@@ -1,13 +1,22 @@
-def main ( input );
+(* ERROR: function passed wrong number/type of arguments *)
 
-	var a12: integral;
-	var y: array[3..4] of rational;
-	
-	func foo(x: integral): rational;
-	begin
-		x := 12
-	end;
+def main( input, output );
+
+  var b: integral;
+  var y: rational;
+  var a: array[1 .. 13] of integral;
+  var z: array[1 .. 13] of rational;
+
+  func foo( a: integral; x: rational ): integral;
+  begin
+    foo := a
+  end;
 
 begin
-end
-.
+ // b := foo(y,b) + foo(b,y,10)
+ b := foo(b,y)
+end.
+
+
+
+

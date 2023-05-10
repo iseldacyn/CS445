@@ -24,6 +24,7 @@ whitespace [ \t]+
 "of" 			{ fprintf( stderr, "[OF]" ); return OF; }
 "integral" 		{ fprintf( stderr, "[INTEGRAL]" ); return INTEGRAL; }
 "rational" 		{ fprintf( stderr, "[RATIONAL]" ); return RATIONAL; }
+"boolean" 		{ fprintf( stderr, "[BOOLEAN]" ); return BOOLEAN; }
 "begin" 		{ fprintf( stderr, "[BEGIN]" ); return BBEGIN; }
 "end"	 		{ fprintf( stderr, "[END]" ); return END; }
 "func"			{ fprintf( stderr, "[FUNC]" ); return FUNC; }

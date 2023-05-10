@@ -28,6 +28,7 @@ scope_t *top_scope;
 %token DEF
 %token VAR
 %token ARRAY OF
+%token BOOLEAN
 %token INTEGRAL RATIONAL
 %token DOTDOT
 %token LBRACKET RBRACKET 
@@ -48,7 +49,9 @@ scope_t *top_scope;
 %token NOT
 
 %token FUNCTION_CALL ARRAY_ACCESS
-%token LIST
+%token FUNCTION_DEFINITION PROCEDURE_DEFINITION
+%token ASSIGN
+%token LIST RANGE
 %token IFELSE IFTHEN THENELSE
 %token FORDO WHILEDO REPEATUNTIL
 
@@ -59,6 +62,8 @@ scope_t *top_scope;
 %type <ival> type
 %type <ival> standard_type
 
+%type <tval> subprogram_header
+%type <tval> range
 %type <tval> variable
 %type <tval> expression
 %type <tval> statement
@@ -113,11 +118,16 @@ type: standard_type
 	;
 
 range: INUM DOTDOT INUM
-	 	//{ $$ = make_range( $1, $4 ); }
+	 	{ 
+			check_range( $1, $3 );
+			$$ = make_tree( RANGE, make_inum($1), make_inum($3) );
+			//$$ = make_range( $1, $3 );
+		}
 	;
 
 standard_type: INTEGRAL { $$ = INTEGRAL; }
 	| RATIONAL { $$ = RATIONAL; }
+	| BOOLEAN { $$ = BOOLEAN; }
 	;
 
 subprogram_declarations: subprogram_declarations subprogram_declaration ';'
@@ -129,7 +139,12 @@ subprogram_declaration:
 		declarations
 		subprogram_declarations
 		compound_statement
-		{ top_scope = scope_pop( top_scope ); } // leaving inner scope
+		{
+			/* here i need to work on assignop */
+			/* this shouldnt be too hard */
+			needs_assignop( $1, $4 );
+			top_scope = scope_pop( top_scope ); // leaving inner scope
+		}
 	;
 
 subprogram_header: FUNC ID
@@ -137,11 +152,14 @@ subprogram_header: FUNC ID
 			double_decl( top_scope, $2 );
 			id_ptr = scope_insert( top_scope, $2 );	// record function ID in current scope
 			top_scope = scope_push( top_scope );	// create a new scope
-			id_ptr->type = $5;
-		//	id_ptr-> = $3;
-			id_ptr = scope_insert( top_scope, $2 );
 		}
 		arguments ':' standard_type ';'
+		{
+			id_ptr = global_scope_search( top_scope, $2 );
+			id_ptr->type = $6;
+			id_ptr->data.args = make_list_from_tree($4);
+			$$ = make_tree( FUNCTION_DEFINITION, make_id( id_ptr ), $4 );
+		}
 	| PROC ID
 		{ 
 			double_decl( top_scope, $2 );
@@ -149,6 +167,12 @@ subprogram_header: FUNC ID
 			top_scope = scope_push( top_scope );	// create a new scope
 		} 
 		arguments ';'
+		{
+			id_ptr = global_scope_search( top_scope, $2 );
+			id_ptr->type = -1;
+			id_ptr->data.args = make_list_from_tree($4);
+			$$ = make_tree( PROCEDURE_DEFINITION, make_id( id_ptr ), $4 );
+		}
 	;
 
 arguments: '(' parameter_list ')'
@@ -204,7 +228,7 @@ matched_statement: IF expression THEN matched_statement ELSE matched_statement
 		{
 			id_ptr = semantic_lookup( top_scope, $2 );
 			type_check( id_ptr->type, INUM );
-			$$ = make_tree( FORDO, NULL, $6 ); //fix later
+			$$ = make_tree( FORDO, make_tree( ASSIGN, make_id( id_ptr ), $4 ), $6 );
 		}
 	| other_statements
 		{ $$ = $1; }
@@ -222,12 +246,15 @@ unmatched_statement: IF expression THEN statement
 		{
 			id_ptr = semantic_lookup( top_scope, $2 );
 			type_check( id_ptr->type, INUM );
-			$$ = make_tree( FORDO, NULL, $6 ); //fix later
+			$$ = make_tree( FORDO, make_tree( ASSIGN, make_id( id_ptr ), $4 ), $6 );
 		}
 	;
 
 other_statements: variable ASSIGNOP expression
-		{ type_check( type_of($1), type_of($3)); }
+		{
+			type_check( type_of($1), type_of($3));
+			$$ = make_tree( ASSIGN, $1, $3 );
+		}
 	| procedure_statement
 		{ $$ = $1; }
 	| compound_statement
@@ -251,6 +278,7 @@ procedure_statement: ID
 	| ID '(' expression_list ')'
 		{
 			id_ptr = semantic_lookup( top_scope, $1 );
+			check_args( id_ptr->data.args, make_list_from_tree($3) );
 			$$ = make_tree( FUNCTION_CALL, make_id( id_ptr ), $3 );
 		}
 	;
@@ -278,7 +306,9 @@ simple_expression: term
 			$$->attribute.opval = $1;
 		}
 	| simple_expression ADDOP term
-		{	$$ = make_tree( ADDOP, $1, $3 );
+		{	
+			type_check( type_of($1), type_of($3) );
+			$$ = make_tree( ADDOP, $1, $3 );
 			$$->attribute.opval = $2;
 		}
 	;
@@ -287,6 +317,7 @@ term: factor
 		{ $$ = $1; }
     | term MULOP factor
 		{ 
+			type_check( type_of($1), type_of($3) );
 			$$ = make_tree( MULOP, $1, $3 );
 			$$->attribute.opval = $2;
 		}
@@ -297,6 +328,7 @@ factor: ID
 	| ID '(' expression_list ')'
 		{ 
 			id_ptr = semantic_lookup( top_scope, $1 );
+			check_args( id_ptr->data.args, make_list_from_tree($3) );
 			$$ = make_tree( FUNCTION_CALL, make_id( semantic_lookup( top_scope, $1 ) ), $3 );
 		}
 	| ID LBRACKET expression RBRACKET
@@ -319,5 +351,9 @@ factor: ID
 int main()
 {
 	top_scope = scope_push( top_scope );
+
+	scope_insert( top_scope, "read" );
+	scope_insert( top_scope, "write" );
+
 	yyparse();
 }
